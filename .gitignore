@@ -1,5 +1,7 @@
 venv/
-/test.py
-/cms.json
+*.json
+
 *.txt
 !requirements.txt
+
+.idea/
