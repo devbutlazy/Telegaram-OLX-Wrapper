@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from typing import Any, Optional
+import logging
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -18,6 +19,10 @@ NEW_ITEMS_URL: str = (
 )
 
 last_id: Optional[int] = None
+logging.basicConfig(
+    format="\033[1;32;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m", 
+    level=logging.INFO
+)
 
 
 async def check_new_items(session: aiohttp.ClientSession, tag: str) -> None:
@@ -64,9 +69,8 @@ async def check_new_items(session: aiohttp.ClientSession, tag: str) -> None:
                 last_id = parsed_info.find("span", class_="css-12hdxwj er34gjf0").text
 
         else:
-            # FIXME: I'm too lazy to using logging or loguru
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
-            await asyncio.sleep(300)
+            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
+            await asyncio.sleep(30)
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -86,27 +90,6 @@ async def scrape_info(session: aiohttp.ClientSession, element: Any) -> None:
     parser = BeautifulSoup(
         await fetch(session, f"{MAIN_SITE}{element.get('href')}"), "html.parser"
     )
-
-    # print("Link: ", f"{MAIN_SITE}{element.get('href')}")
-    # print("Title:", element.find("h6", class_="css-16v5mdi er34gjf0").text)
-
-    # if parser.find("h3", class_="css-12vqlj3"):
-    #     print("Price:", parser.find("h3", class_="css-12vqlj3").text)
-
-    # if element.find("span", class_="css-3lkihg"):
-    #     print("State:", element.find("span", class_="css-3lkihg").text)
-
-    # print("Location:", element.find("p", class_="css-1a4brun er34gjf0").text)
-    # print(
-    #     "User: ",
-    #     parser.find("h4", class_="css-1lcz6o7 er34gjf0").text,
-    #     " | ",
-    #     parser.find("p", class_="css-b5m1rv er34gjf0").text,
-    # )
-
-    # print(parser.find("span", class_="css-12hdxwj er34gjf0").text)
-    # print("-" * 20)
-
     last_id = parser.find("span", class_="css-12hdxwj er34gjf0").text
 
 
@@ -120,15 +103,14 @@ async def main(tag: str) -> None:
 
         tasks = [scrape_info(session, element) for element in product_elements]
         await asyncio.gather(*tasks)
-        # FIXME: I'm too lazy to using logging or loguru
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Successfully scraped items")
-
-        # FIXME: I'm too lazy to using logging or loguru
-        print(
-            f"[{datetime.now().strftime('%H:%M:%S')}] Starting function check_new_items..."
+        logging.info(
+            f"Successfully scraped items"
+        )
+        logging.info(
+            f"Starting checking for new items...",
         )
         await check_new_items(session, tag=tag)
 
 
 if __name__ == "__main__":
-    asyncio.run(main(str(input("Enter the good you want to search: "))))
+    asyncio.run(main(str(input("Enter the item you want to search: "))))
