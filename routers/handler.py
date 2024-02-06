@@ -19,9 +19,9 @@ async def my_callback_foo(query: CallbackQuery, callback_data: CustomCallback):
             await query.answer("2")
         case "information":
             message = await query.message.reply(
-                f"❓ I am an advanced Telegram Bot - OLX Wrapper.\n"
-                f"📕 I monitor goods to buy them at lower prices.\n"
-                f"📘 Commands list: /start , /test \n"
+                f"❓ Я просунутий Telegram-бот - OLX Wrapper.\n"
+                f"📕 Моніторю товари, щоб купувати їх за нижчими цінами.\n"
+                f"📘 Список команд: /help\n"
             )
             await asyncio.sleep(15)
             await message.delete()
