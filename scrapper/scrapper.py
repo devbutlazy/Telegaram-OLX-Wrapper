@@ -29,7 +29,6 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
         return await response.text()
 
 
-# FIXME: Fix the spamming error and make it work correctly
 async def check_new_items(
     bot: Bot, session: aiohttp.ClientSession, tag: str, data: Any
 ) -> None:
@@ -95,13 +94,18 @@ async def check_new_items(
                 }
             )
             new_date_string = None
-            time_match = re.search(r'\b(\d{2}:\d{2})\b', element.find('p', class_='css-1a4brun er34gjf0').text)
+            time_match = re.search(
+                r"\b(\d{2}:\d{2})\b",
+                element.find("p", class_="css-1a4brun er34gjf0").text,
+            )
             if time_match:
                 time_str = time_match.group(1)
                 date_object = datetime.strptime(time_str, "%H:%M")
                 new_date_object = date_object + timedelta(hours=2)
                 new_time_str = new_date_object.strftime("%H:%M")
-                new_date_string = element.find('p', class_='css-1a4brun er34gjf0').text.replace(time_str, new_time_str)
+                new_date_string = element.find(
+                    "p", class_="css-1a4brun er34gjf0"
+                ).text.replace(time_str, new_time_str)
 
             await bot.send_message(
                 chat_id=data.get("chat_id"),
