@@ -156,7 +156,7 @@ async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -
     )
 
 
-async def process_tags(bot: Bot, session, data):
+async def process_tags(bot: Bot, session, data) -> None:
     """
     Scrape OLX website for listings related to the target item.
 
@@ -169,7 +169,13 @@ async def process_tags(bot: Bot, session, data):
         await check_new_items(bot, session, tag=tag, data=data)
 
 
-async def get_last_id_from_new_tag(tag: str):
+async def get_last_id_from_new_tag(tag: str) -> None:
+    """
+    Scrape OLX website for listings related to the target item.
+
+    Params:
+    - tag: str - tag to search for
+    """
     async with aiohttp.ClientSession() as session:
         result = await fetch(session, SEARCH_URL.format(target=tag))
 
@@ -194,7 +200,7 @@ async def get_last_id_from_new_tag(tag: str):
     return int(last_id)
 
 
-async def main(bot: Bot):
+async def main(bot: Bot) -> None:
     """
     Start the other services/functions.
 
