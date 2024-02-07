@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from routers.handler import CustomCallback
 
 from database import user_tags, get_user_tags, create_user
+from scrapper.scrapper import get_last_id_from_new_tag
 
 router = Router()
 
@@ -81,8 +82,10 @@ async def add_tag_handler(message: Message) -> None:
 
     tags.append(tag[1])
 
+    last_id = await get_last_id_from_new_tag(tag[1])
+
     await user_tags.update_one(
-        {"user_id": message.from_user.id}, {"$set": {"tags": tags}}, upsert=True
+        {"user_id": message.from_user.id}, {"$set": {"tags": tags, "last_id": last_id}}, upsert=True
     )
 
     await message.answer(

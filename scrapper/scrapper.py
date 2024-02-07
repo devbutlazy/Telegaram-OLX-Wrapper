@@ -62,47 +62,83 @@ async def check_new_items(
     product_soup = BeautifulSoup(result, "html.parser")
     product_elements = product_soup.find_all("a", class_="css-rc5s2u")
 
-    if data.get("last_id"):
+    # if data.get("last_id"):
+    try:
         parsed_info = BeautifulSoup(
             await fetch(session, MAIN_SITE + product_elements[0].get("href")),
             "html.parser",
         )
+    except IndexError:
+        print(product_elements)
+        parsed_info = BeautifulSoup(
+            await fetch(session, MAIN_SITE + product_elements.find("href")),
+            "html.parser",
+        )
 
-        await user_tags.update_one(
-            {"user_id": data.get("user_id")},
-            {
-                "$set": {
+    # await user_tags.update_one(
+    #     {"user_id": data.get("user_id")},
+    #     {
+    #         "$set": {
+    #             "last_id": int(
+    #                 parsed_info.find(
+    #                     "span", class_="css-12hdxwj er34gjf0"
+    #                 ).text.replace("ID: ", "")
+    #             )
+    #         }
+    #     },
+    # )
+
+    # data.update(
+    #     {
+    #         "last_id": int(
+    #             parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
+    #                 "ID: ", ""
+    #             )
+    #         )
+    #     }
+    # )
+
+    for element in product_elements:
+        parsed_info = BeautifulSoup(
+            await fetch(session, f"{MAIN_SITE}{element.get('href')}"), "html.parser"
+        )
+
+        # print(
+        #     parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
+        #         "ID: ", ""
+        #     )
+        # )
+        # print(element.find("p", class_="css-1kyngsx er34gjf0").text)
+        if not element.find("p", class_="css-1kyngsx er34gjf0"):
+            continue
+
+        if int(
+            parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
+                "ID: ", ""
+            )
+        ) >= data.get("last_id"):
+            await user_tags.update_one(
+                {"user_id": data.get("user_id")},
+                {
+                    "$set": {
+                        "last_id": int(
+                            parsed_info.find(
+                                "span", class_="css-12hdxwj er34gjf0"
+                            ).text.replace("ID: ", "")
+                        )
+                    }
+                },
+            )
+
+            data.update(
+                {
                     "last_id": int(
                         parsed_info.find(
                             "span", class_="css-12hdxwj er34gjf0"
                         ).text.replace("ID: ", "")
                     )
                 }
-            },
-        )
-
-        data.update(
-            {
-                "last_id": int(
-                    parsed_info.find(
-                        "span", class_="css-12hdxwj er34gjf0"
-                    ).text.replace("ID: ", "")
-                )
-            }
-        )
-
-    for element in product_elements:
-        logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
-        parsed_info = BeautifulSoup(
-            await fetch(session, f"{MAIN_SITE}{element.get('href')}"), "html.parser"
-        )
-        if not element.find("p", class_="css-1kyngsx er34gjf0"):
-            continue
-        if int(
-            parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
-                "ID: ", ""
             )
-        ) != data.get("last_id"):
             await bot.send_message(
                 chat_id=data.get("chat_id"),
                 text=(
@@ -116,8 +152,10 @@ async def check_new_items(
                 ),
                 parse_mode="html",
             )
+            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         else:
             logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
+            return
 
 
 async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -> None:
@@ -143,7 +181,9 @@ async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -
                 "last_id": int(
                     parser.find("span", class_="css-12hdxwj er34gjf0").text.replace(
                         "ID: ", ""
-                    ) if parser.find("span", class_="css-12hdxwj er34gjf0") else data.get("last_id")
+                    )
+                    if parser.find("span", class_="css-12hdxwj er34gjf0")
+                    else data.get("last_id")
                 ),
                 "tags": data.get("tags"),
             }
@@ -162,13 +202,46 @@ async def process_tags(bot: Bot, session, data):
     - data: Any - user data for database
     """
     for tag in data.get("tags"):
-        site = await fetch(session, SEARCH_URL.format(target=tag))
-        product_soup = BeautifulSoup(site, "html.parser")
-        product_elements = product_soup.find_all("a", class_="css-rc5s2u")
+        # site = await fetch(session, SEARCH_URL.format(target=tag)) #site iseless
+        # забий, воно мені не пише нові оголошення поки
+        # product_soup = BeautifulSoup(site, "html.parser")
+        # product_elements = product_soup.find_all("a", class_="css-rc5s2u")
 
-        tasks = [scrape_info(session, element, data) for element in product_elements]
-        await asyncio.gather(*tasks)
+        # tasks = [scrape_info(session, element, data) for element in product_elements]
+        # await asyncio.gather(*tasks)
         await check_new_items(bot, session, tag=tag, data=data)
+
+
+async def get_last_id_from_new_tag(tag: str):
+    async with aiohttp.ClientSession() as session: 
+        result = await fetch(session, SEARCH_URL.format(target=tag))
+    
+
+    product_soup = BeautifulSoup(result, "html.parser")
+
+    all_list = []
+    for element in product_soup.find_all("a", class_="css-rc5s2u"):
+        # return product_soup.find("p", class_="css-1a4brun er34gjf0").text
+        text = element.find("p", class_="css-1a4brun er34gjf0").text
+        if text.find("Сьогодні о ") != -1:
+            splitted = text.split(" - Сьогодні о ", maxsplit=1)
+            # print(element)
+            
+            async with aiohttp.ClientSession() as session:
+                site = await fetch(
+                    session, MAIN_SITE + element.get("href")
+                )
+            site_soup = BeautifulSoup(site, "html.parser")
+            product_id = site_soup.find("span", class_="css-12hdxwj er34gjf0").text.replace(
+                "ID: ", ""
+            )
+            all_list.append({splitted[1]: product_id})
+
+    # print(max(all_list))
+    last_id_dict = max(all_list, key=lambda x: list(x.keys())[0])
+    last_id = list(last_id_dict.values())[0]
+
+    return int(last_id)
 
 
 async def main(bot: Bot):
@@ -195,4 +268,4 @@ async def main(bot: Bot):
 
                 await process_tags(bot, session, data)
         logger.info("5 Minute Cooldown Started")
-        await asyncio.sleep(300)  # 300 seconds = 5 minutes
+        await asyncio.sleep(1)  # 300 seconds = 5 minutes

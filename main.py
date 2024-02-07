@@ -8,6 +8,7 @@ from routers import commands, handler
 import scrapper.scrapper
 
 TOKEN = "6548645354:AAFwyuEs25CIBLdPhc3l9vYXqOuaxdyL7v4"
+# TOKEN = "5435989927:AAGxoXF6lrD3wvtyUZvv7uJm2acF9HhAdok"  # @запусти
 
 
 async def main() -> None:

@@ -8,14 +8,14 @@ user_tags = olx_wrapper.user_tags
 
 MAIN_SITE: str = "https://www.olx.ua"
 SEARCH_URL: str = (
-    "https://www.olx.ua/uk/list/q-{target}/?search%5Border%5D="
-    "filter_float_price:asc&search%5Bfilter_float_price:from%5D=100"
+    # "https://www.olx.ua/uk/list/q-{target}/?search%5Border%5D="
+    # "filter_float_price:asc&search%5Bfilter_float_price:from%5D=100"
+    "https://www.olx.ua/uk/list/q-{target}/?search%5Border%5D=created_at%3Adesc"
 )
 NEW_ITEMS_URL: str = (
     "https://www.olx.ua/uk/list/q-{target}/?min_id={last_id}"
     "&reason=observed_search"
-    "&search%5Border%5D=filter_float_price:asc"
-    "&search%5Bfilter_float_price:from%5D=100"
+    "&search%5Border%5D=created_at%3Adesc"
 )
 
 

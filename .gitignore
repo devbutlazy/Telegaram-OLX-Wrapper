@@ -5,3 +5,4 @@ routers/__pycache__
 scrapper/__pycache__
 *.txt
 !requirements.txt
+.idea/
