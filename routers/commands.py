@@ -149,8 +149,8 @@ async def view_tags_handler(message: Message) -> None:
 
     await message.answer(
         (
-            f"🟡 <b>Ваші теги:</b>\n{tags_list}"
-            if tags is not None
+            f"❓ <b>Ваші теги:</b>\n{tags_list}"
+            if tags
             else "❗️ <b>У вас немає доданих тегів</b>"
         ),
         parse_mode="html",
