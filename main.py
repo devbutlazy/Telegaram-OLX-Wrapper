@@ -15,9 +15,9 @@ async def main() -> None:
     dp = Dispatcher()
 
     dp.include_routers(commands.router, handler.router)
-    asyncio.create_task(scrapper.scrapper.main(bot=bot)) 
+    asyncio.create_task(scrapper.scrapper.main(bot=bot))
     await dp.start_polling(bot)
-    
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)

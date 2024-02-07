@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.types import Message
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.utils.markdown import hbold
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from routers.handler import CustomCallback
@@ -12,6 +12,12 @@ router = Router()
 
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
+    """
+    Startup command, to add user to database and give information about the bot.
+
+    Params:
+    - message: Message - Telegram message 
+    """
     await create_user(message.from_user.id, message.chat.id)
     await message.answer(
         f"🇺🇸 {hbold(message.from_user.full_name)}, Welcome to OLX Wrapper.\n"
@@ -26,23 +32,14 @@ async def command_start_handler(message: Message) -> None:
     )
 
 
-@router.message(Command("test"))
-async def test_handler(message: Message) -> None:
-    builder = InlineKeyboardBuilder()
-    builder.button(
-        text="#1",
-        callback_data=CustomCallback(data="1"),
-    )
-    builder.button(
-        text="#2",
-        callback_data=CustomCallback(data="2"),
-    )
-
-    await message.answer("test?", reply_markup=builder.as_markup())
-
-
 @router.message(Command("help"))
 async def help_handler(message: Message) -> None:
+    """
+    A command to view the list of available commands.
+
+    Params:
+    - message: Message - Telegram message 
+    """
     await message.answer(
         "🔧 Налаштуйте теги для автоматичного пошуку товарів.\n\n"
         "/add_tag -  🟢 Додати новий тег\n"
@@ -53,6 +50,15 @@ async def help_handler(message: Message) -> None:
 
 @router.message(Command("add_tag"))
 async def add_tag_handler(message: Message) -> None:
+    """
+    A command to add a new tag to database. (using update_one)
+    ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
+    + Free plan == 1 tag
+    + Premium plan == 3 tags
+
+    Params:
+    - message: Message - Telegram message 
+    """
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
@@ -83,6 +89,13 @@ async def add_tag_handler(message: Message) -> None:
 
 @router.message(Command("remove_tag"))
 async def remove_tag_handler(message: Message) -> None:
+    """
+    A command to delete a tag from database. (using update_one)
+    ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
+
+    Params:
+    - message: Message - Telegram message 
+    """
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
@@ -110,6 +123,12 @@ async def remove_tag_handler(message: Message) -> None:
 
 @router.message(Command("view_tags"))
 async def view_tags_handler(message: Message) -> None:
+    """
+    A command to view user tags from database (using get_user_tags function).
+
+    Params:
+    - message: Message - Telegram message 
+    """
     tags = await get_user_tags(message.from_user.id)
 
     tags_list = "\n".join(f"#{tag}" for tag in tags)
@@ -119,28 +138,3 @@ async def view_tags_handler(message: Message) -> None:
         if tags is not None
         else "❗️ У вас немає доданих тегів!"
     )
-
-
-# print("New item found")
-
-# print("Link: ", f"{MAIN_SITE}{element.get('href')}")
-# print("Title:", element.find("h6", class_="css-16v5mdi er34gjf0").text)
-
-# if parsed_info.find("h3", class_="css-12vqlj3"):
-#     print("Price:", parsed_info.find("h3", class_="css-12vqlj3").text)
-
-# if element.find("span", class_="css-3lkihg"):
-#     print("State:", element.find("span", class_="css-3lkihg").text)
-
-# print(
-#     "Location:", element.find("p", class_="css-1a4brun er34gjf0").text
-# )
-# print(
-#     "User: ",
-#     parsed_info.find("h4", class_="css-1lcz6o7 er34gjf0").text,
-#     " | ",
-#     parsed_info.find("p", class_="css-b5m1rv er34gjf0").text,
-# )
-
-# print(parsed_info.find("span", class_="css-12hdxwj er34gjf0").text)
-# print("-" * 20)

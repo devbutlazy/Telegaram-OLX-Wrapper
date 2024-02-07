@@ -2,8 +2,8 @@ from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
-olx_wrapper = client.olx_wrapper
 
+olx_wrapper = client.olx_wrapper
 user_tags = olx_wrapper.user_tags
 
 MAIN_SITE: str = "https://www.olx.ua"
@@ -20,8 +20,6 @@ NEW_ITEMS_URL: str = (
 
 
 async def get_user_tags(user_id: int) -> Optional[List[str]]:
-    # if not await user_tags.find_one({"user_id": user_id}):
-    #     await user_tags.insert_one({"_id": user_id, "tags": []})
     if not await user_tags.find_one({"user_id": user_id}):
         return []
 
@@ -32,6 +30,5 @@ async def create_user(user_id: int, chat_id: int) -> None:
     await user_tags.update_one(
         {"user_id": user_id},
         {"$set": {"chat_id": chat_id, "last_id": 0, "tags": []}},
-        upsert=True
+        upsert=True,
     )
-
