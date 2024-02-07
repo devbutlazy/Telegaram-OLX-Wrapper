@@ -5,10 +5,6 @@ import asyncio
 import logging
 
 router = Router()
-logging.basicConfig(
-    format="\033[1;31;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m",
-    level=logging.ERROR,
-)
 
 
 class CustomCallback(callback_data.CallbackData, prefix="data"):
@@ -23,11 +19,16 @@ async def my_callback_foo(query: CallbackQuery, callback_data: CustomCallback):
     Params:
     - query: CallbackQuery - Telegram callback query
     """
-    logger = logging.getLogger("aiogram")
+
+    logging.basicConfig(
+        format="\033[1;31;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m",
+        level=logging.ERROR,
+    )
+    
     match callback_data.data:
         case "information":
             message = await query.message.reply(
-                f"❓ Новий Telegram-бот - OLX Wrapper.\n"
+                f"❓ Я, новий Телеграм-бот - OLX Wrapper.\n"
                 f"📕 Моніторю товари, щоб купувати їх за нижчими цінами.\n"
                 f"📘 Список команд: /help\n"
             )
@@ -37,4 +38,4 @@ async def my_callback_foo(query: CallbackQuery, callback_data: CustomCallback):
             message = await query.message.reply(
                 f"❓ Сталася помилка, повідомте про неї на тех. підтримці!\n"
             )
-            logger.error(callback_data.data)
+            logging.error(callback_data.data)

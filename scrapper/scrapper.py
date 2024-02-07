@@ -92,7 +92,7 @@ async def check_new_items(
         )
 
     for element in product_elements:
-        print(element.find("p", class_="css-1kyngsx er34gjf0"))
+        logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         parsed_info = BeautifulSoup(
             await fetch(session, f"{MAIN_SITE}{element.get('href')}"), "html.parser"
         )
@@ -143,8 +143,9 @@ async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -
                 "last_id": int(
                     parser.find("span", class_="css-12hdxwj er34gjf0").text.replace(
                         "ID: ", ""
-                    )
+                    ) if parser.find("span", class_="css-12hdxwj er34gjf0") else data.get("last_id")
                 ),
+                "tags": data.get("tags"),
             }
         },
         upsert=True,
@@ -193,4 +194,5 @@ async def main(bot: Bot):
                     tags = [tags]
 
                 await process_tags(bot, session, data)
+        logger.info("5 Minute Cooldown Started")
         await asyncio.sleep(300)  # 300 seconds = 5 minutes

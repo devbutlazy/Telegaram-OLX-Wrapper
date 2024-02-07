@@ -16,16 +16,16 @@ async def command_start_handler(message: Message) -> None:
     Startup command, to add user to database and give information about the bot.
 
     Params:
-    - message: Message - Telegram message 
+    - message: Message - Telegram message
     """
     await create_user(message.from_user.id, message.chat.id)
     await message.answer(
-        f"🇺🇸 {hbold(message.from_user.full_name)}, Welcome to OLX Wrapper.\n"
-        f"How can I assist you?",
+        f"🇺🇦 {hbold(message.from_user.full_name)}, Ласкаво просимо до OLX Wrapper.\n"
+        f"Як я можу вам допомогти?",
         reply_markup=(
             InlineKeyboardBuilder()
             .button(
-                text="❓ Information", callback_data=CustomCallback(data="information")
+                text="❓ Деталі", callback_data=CustomCallback(data="information")
             )
             .as_markup()
         ),
@@ -38,13 +38,14 @@ async def help_handler(message: Message) -> None:
     A command to view the list of available commands.
 
     Params:
-    - message: Message - Telegram message 
+    - message: Message - Telegram message
     """
     await message.answer(
-        "🔧 Налаштуйте теги для автоматичного пошуку товарів.\n\n"
-        "/add_tag -  🟢 Додати новий тег\n"
-        "/remove_tag - 🔴 Видалити тег\n"
-        "/view_tags - 🟡 Подивитись список своїх тегів\n",
+        "🔧 <b>Налаштуйте теги для автоматичного пошуку товарів.</b>\n\n"
+        "/add_tag -  Додати новий тег\n"
+        "/remove_tag - Видалити тег\n"
+        "/view_tags - Подивитись список своїх тегів\n",
+        parse_mode="html",
     )
 
 
@@ -57,23 +58,26 @@ async def add_tag_handler(message: Message) -> None:
     + Premium plan == 3 tags
 
     Params:
-    - message: Message - Telegram message 
+    - message: Message - Telegram message
     """
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
-            "❓ Як додати новий тег?\n" '🔵 Приклад: "/add_tag ігровий пк"'
+            "❓ Як додати новий тег?\n" '🔵 Приклад: "/add_tag ігровий пк"',
+            parse_mode="html",
         )
 
     tags = await get_user_tags(message.from_user.id)
 
-    print(tags)
-    print(len(tags))
     if len(tags) >= 1:
-        return await message.answer("❗️ Ви не можете додати більше 1-го тегу!\n")
+        return await message.answer(
+            "❗️ <b>Ви не можете додати більше 1-го тегу</b>\n", parse_mode="html"
+        )
 
     if tag[1] in tags:
-        return await message.answer("❗️ Такий тег вже є в вашому списку!\n")
+        return await message.answer(
+            "❗️ <b>Такий тег вже є в вашому списку</b>\n", parse_mode="html"
+        )
 
     tags.append(tag[1])
 
@@ -82,8 +86,9 @@ async def add_tag_handler(message: Message) -> None:
     )
 
     await message.answer(
-        f'🟢 Тег "#{tag[1]}" успішно додано в базу даних\n'
-        "❓ Як тільки з'являться нові оголошення по цій темі, бот автоматично надішле вам сповіщення!\n"
+        f'🟢 <b>Тег "#{tag[1]}" успішно додано в базу даних</b>\n'
+        "❓ Як тільки з'являться нові оголошення по цій темі, бот автоматично надішле вам сповіщення!\n",
+        parse_mode="html",
     )
 
 
@@ -94,21 +99,26 @@ async def remove_tag_handler(message: Message) -> None:
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
 
     Params:
-    - message: Message - Telegram message 
+    - message: Message - Telegram message
     """
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
-            "❓ Як додати видалити тег?\n" '🔵 Приклад: "/remove_tag ігровий пк"'
+            "❓ Як додати видалити тег?\n" '🔵 Приклад: "/remove_tag ігровий пк"',
+            parse_mode="html",
         )
 
     tags = await get_user_tags(message.from_user.id)
 
     if len(tags) < 1:
-        return await message.answer("❗️ У вас ще немає доданих тегів!\n")
+        return await message.answer(
+            "❗️ <b>У вас ще немає доданих тегів</b>\n", parse_mode="html"
+        )
 
     if tag[1] not in tags:
-        return await message.answer("❗️ Цього тегу немає у списку!\n")
+        return await message.answer(
+            "❗️ <b>Цього тегу немає у списку</b>\n", parse_mode="html"
+        )
 
     tags.remove(tag[1])
     await user_tags.update_one(
@@ -116,8 +126,9 @@ async def remove_tag_handler(message: Message) -> None:
     )
 
     await message.answer(
-        f'🟢 Тег "#{tag[1]}" успішно прибрано з бази даних\n'
-        "❓ Бот більше не присилатиме вам сповіщення по цій темі!\n"
+        f'🟢 <b>Тег "#{tag[1]}" успішно прибрано з бази даних</b>\n'
+        "❓ Бот більше не присилатиме вам сповіщення по цій темі!\n",
+        parse_mode="html",
     )
 
 
@@ -127,14 +138,17 @@ async def view_tags_handler(message: Message) -> None:
     A command to view user tags from database (using get_user_tags function).
 
     Params:
-    - message: Message - Telegram message 
+    - message: Message - Telegram message
     """
     tags = await get_user_tags(message.from_user.id)
 
     tags_list = "\n".join(f"#{tag}" for tag in tags)
 
     await message.answer(
-        f"🟡 Ваші теги:\n{tags_list}"
-        if tags is not None
-        else "❗️ У вас немає доданих тегів!"
+        (
+            f"🟡 <b>Ваші теги:</b>\n{tags_list}"
+            if tags is not None
+            else "❗️ <b>У вас немає доданих тегів</b>"
+        ),
+        parse_mode="html",
     )
