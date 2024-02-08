@@ -5,7 +5,7 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from routers import commands, handler
-import scrapper.scrapper
+import api.scrapper
 
 TOKEN = "6548645354:AAFwyuEs25CIBLdPhc3l9vYXqOuaxdyL7v4"
 # TOKEN = "5435989927:AAGxoXF6lrD3wvtyUZvv7uJm2acF9HhAdok" 
@@ -16,7 +16,7 @@ async def main() -> None:
     dp = Dispatcher()
 
     dp.include_routers(commands.router, handler.router)
-    asyncio.create_task(scrapper.scrapper.main(bot=bot))
+    asyncio.create_task(api.scrapper.main(bot=bot))
     await dp.start_polling(bot)
 
 

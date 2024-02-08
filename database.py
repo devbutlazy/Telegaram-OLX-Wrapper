@@ -18,6 +18,8 @@ NEW_ITEMS_URL: str = (
     "&search%5Border%5D=created_at%3Adesc"
 )
 
+DONATELLO_URL: str = "https://donatello.to/devbutlazy?&c={title}&a=100&m={comment}"
+
 
 async def get_user_tags(user_id: int) -> Optional[List[str]]:
     if not await user_tags.find_one({"user_id": user_id}):
@@ -26,9 +28,23 @@ async def get_user_tags(user_id: int) -> Optional[List[str]]:
     return (await user_tags.find_one({"user_id": user_id})).get("tags", [])
 
 
+async def get_premium_status(user_id):
+    if not await user_tags.find_one({"user_id": user_id}):
+        return False
+
+    return (await user_tags.find_one({"user_id": user_id})).get("premium_status", False)
+
+
 async def create_user(user_id: int, chat_id: int) -> None:
     await user_tags.update_one(
         {"user_id": user_id},
-        {"$set": {"chat_id": chat_id, "last_id": 0, "tags": []}},
+        {
+            "$set": {
+                "chat_id": chat_id,
+                "last_id": 0,
+                "tags": [],
+                "premium_status": False,
+            }
+        },
         upsert=True,
     )

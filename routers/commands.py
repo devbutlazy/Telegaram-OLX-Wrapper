@@ -5,8 +5,15 @@ from aiogram.utils.markdown import hbold
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from routers.handler import CustomCallback
 
-from database import user_tags, get_user_tags, create_user
-from scrapper.scrapper import get_last_id_from_new_tag
+from database import (
+    user_tags,
+    get_user_tags,
+    create_user,
+    get_premium_status,
+    DONATELLO_URL,
+)
+from api.scrapper import get_last_id
+from api.donatello import donatello
 
 router = Router()
 
@@ -19,15 +26,14 @@ async def command_start_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
+
     await create_user(message.from_user.id, message.chat.id)
     await message.answer(
         f"🇺🇦 {hbold(message.from_user.full_name)}, Ласкаво просимо до OLX Wrapper.\n"
         f"Як я можу вам допомогти?",
         reply_markup=(
             InlineKeyboardBuilder()
-            .button(
-                text="❓ Деталі", callback_data=CustomCallback(data="information")
-            )
+            .button(text="❓ Деталі", callback_data=CustomCallback(data="information"))
             .as_markup()
         ),
     )
@@ -41,6 +47,7 @@ async def help_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
+
     await message.answer(
         "🔧 <b>Налаштуйте теги для автоматичного пошуку товарів.</b>\n\n"
         "/add_tag -  Додати новий тег\n"
@@ -61,6 +68,7 @@ async def add_tag_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
+
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
@@ -82,10 +90,12 @@ async def add_tag_handler(message: Message) -> None:
 
     tags.append(tag[1])
 
-    last_id = await get_last_id_from_new_tag(tag[1])
+    last_id = await get_last_id(tag[1])
 
     await user_tags.update_one(
-        {"user_id": message.from_user.id}, {"$set": {"tags": tags, "last_id": last_id}}, upsert=True
+        {"user_id": message.from_user.id},
+        {"$set": {"tags": tags, "last_id": last_id}},
+        upsert=True,
     )
 
     await message.answer(
@@ -104,6 +114,7 @@ async def remove_tag_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
+
     tag: list = message.text.split(maxsplit=1)
     if len(tag) <= 1:
         return await message.answer(
@@ -143,6 +154,7 @@ async def view_tags_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
+
     tags = await get_user_tags(message.from_user.id)
 
     tags_list = "\n".join(f"#{tag}" for tag in tags)
@@ -154,4 +166,36 @@ async def view_tags_handler(message: Message) -> None:
             else "❗️ <b>У вас немає доданих тегів</b>"
         ),
         parse_mode="html",
+    )
+
+
+@router.message(Command("premium"))
+async def premium_command_handler(message: Message) -> None:
+    """
+    A command to view premium status.
+
+    Params:
+    - message: Message - Telegram message
+    """
+
+    premium_status = await get_premium_status(message.from_user.id)
+    if premium_status:
+        text = (
+            "<b>✔️ Ви придбали OLX Wrapper Pro</b>\n"
+            "<b>❗ Тепер у вас збільшений ліміт до трьох тегів!</b>"
+        )
+    else:
+        text = (
+            "<b>❌ Ви ще не придбали OLX Wrapper Pro</b>\n"
+            "❓ Після придбання преміуму, у вас буде збільшений ліміт тегів (до трьох)!\n"
+            "💰 Варість: 100грн"
+        )
+        reply_markup = InlineKeyboardBuilder().button(
+            text="💰 Придбати преміум", url=await donatello.get_donate_url(message.from_user.full_name, message.from_user.id)
+        )
+
+    await message.answer(
+        text=text,
+        parse_mode="html",
+        reply_markup=reply_markup.as_markup() if reply_markup else None,
     )

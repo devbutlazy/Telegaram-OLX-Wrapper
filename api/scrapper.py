@@ -122,8 +122,7 @@ async def check_new_items(
             )
             logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         else:
-            logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
-            return
+            return logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
 
 
 async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -> None:
@@ -173,7 +172,7 @@ async def process_tags(bot: Bot, session, data) -> None:
         await check_new_items(bot, session, tag=tag, data=data)
 
 
-async def get_last_id_from_new_tag(tag: str) -> None:
+async def get_last_id(tag: str) -> None:
     """
     Scrape OLX website for listings related to the target item.
 
