@@ -78,9 +78,12 @@ async def add_tag_handler(message: Message) -> None:
 
     tags = await get_user_tags(message.from_user.id)
 
-    if len(tags) >= 1:
+    limit = 3 if await get_premium_status(message.from_user.id) else 1
+
+    if len(tags) >= limit:
         return await message.answer(
-            "❗️ <b>Ви не можете додати більше 1-го тегу</b>\n", parse_mode="html"
+            f"❗️ <b>Ви не можете додати більше {limit} тегу(ів)</b>\n",
+            parse_mode="html",
         )
 
     if tag[1] in tags:
@@ -191,7 +194,10 @@ async def premium_command_handler(message: Message) -> None:
             "💰 Варість: 100грн"
         )
         reply_markup = InlineKeyboardBuilder().button(
-            text="💰 Придбати преміум", url=await donatello.get_donate_url(message.from_user.full_name, message.from_user.id)
+            text="💰 Придбати преміум",
+            url=await donatello.get_donate_url(
+                message.from_user.full_name, message.from_user.id
+            ),
         )
 
     await message.answer(
