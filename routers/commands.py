@@ -122,47 +122,49 @@ async def add_tag_handler(message: Message, command: CommandObject) -> None:
 @router.message(Command("remove_tag"), IsBlacklist())
 async def remove_tag_handler(message: Message, command: CommandObject) -> None:
     """
-    A command to delete a tag from database. (using update_one)
+    A command to delete a tag from the database. (using update_one)
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
 
     Params:
     - message: Message - Telegram message
     """
     limit = 3 if await get_premium_status(message.from_user.id) else 1
-    
-    tag_: str = command.args
-    if not tag_:
+
+    tag_arg: str = command.args
+    if not tag_arg:
         return await message.answer(
-            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> Як додати видалити тег?\n"
-            '🔵 Приклад: "/remove_tag ігровий пк"',
+            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> How to remove a tag?\n"
+            '🔵 Example: "/remove_tag game_pc"',
             parse_mode="html",
         )
 
-    tags = await get_user_tags(message.from_user.id)
+    user_tags = await get_user_tags(message.from_user.id)
 
-    tag_dict = [t_dict for t_dict in tags for tag in t_dict.keys() if tag == tag_][0]
+    tag_dict = [
+        t_dict for t_dict in user_tags for tag in t_dict.keys() if tag == tag_arg
+    ][0]
     tag_name = list(tag_dict.keys())[0]
 
-    if len(tags) < 1:
+    if len(user_tags) < 1:
         return await message.answer(
-            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>\n",
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>You haven't added any tags yet</b>\n",
             parse_mode="html",
         )
 
-    if tag_ not in tag_name:
+    if tag_arg not in tag_name:
         return await message.answer(
-            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Цього тегу немає у списку</b>\n",
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>This tag is not in your list</b>\n",
             parse_mode="html",
         )
 
-    tags.remove(tag_dict)
+    user_tags.remove(tag_dict)
     await users.update_one(
-        {"user_id": message.from_user.id}, {"$set": {"tags": tags}}, upsert=True
+        {"user_id": message.from_user.id}, {"$set": {"tags": user_tags}}, upsert=True
     )
 
     await message.answer(
-        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag_}" успішно прибрано з бази даних</b>\n'
-        f"❓ Бот більше не присилатиме вам сповіщення по цій темі! (Використано {len(tags)} з {limit} тегів)\n",
+        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Tag "#{tag_arg}" successfully removed from the database</b>\n'
+        f"❓ The bot will no longer send you notifications on this topic! (Used {len(user_tags)} out of {limit} tags)\n",
         parse_mode="html",
     )
 
