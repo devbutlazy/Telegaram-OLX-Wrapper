@@ -44,6 +44,7 @@ async def get_user_tags(user_id: int) -> Optional[List[str]]:
     if not await users.find_one({"user_id": user_id}):
         return []
 
+    # {"tag": last_id}
     return (await users.find_one({"user_id": user_id})).get("tags", [])
 
 

@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.utils.markdown import hbold
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from routers.handler import CustomCallback
@@ -59,7 +59,7 @@ async def help_handler(message: Message) -> None:
 
 
 @router.message(Command("add_tag"), IsBlacklist())
-async def add_tag_handler(message: Message) -> None:
+async def add_tag_handler(message: Message, command: CommandObject) -> None:
     """
     A command to add a new tag to database. (using update_one)
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
@@ -70,8 +70,8 @@ async def add_tag_handler(message: Message) -> None:
     - message: Message - Telegram message
     """
 
-    tag: list = message.text.split(maxsplit=1)
-    if len(tag) <= 1:
+    tag: str = command.args
+    if not tag:
         return await message.answer(
             "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> Як додати новий тег?\n"
             '🔵 Приклад: "/add_tag ігровий пк"',
@@ -94,33 +94,33 @@ async def add_tag_handler(message: Message) -> None:
             parse_mode="html",
         )
 
-    if tag[1] in tags:
+    if tag in tags:
         return await message.answer(
             "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Такий тег вже є в вашому списку</b>\n",
             parse_mode="html",
         )
 
     loading = await message.answer(
-        "<a href='https://i.ibb.co/VSJWPkC/image.jpg'>❓</a><b>Зачекайте, викноуємо операцію...</b>\n"
+        "<a href='https://i.ibb.co/VSJWPkC/image.jpg'>❓</a><b>Зачекайте, виконуємо операцію...</b>\n"
     )
-    
-    tags.append(tag[1])
-    last_id = await get_last_id(tag[1])
+
+    last_id = await get_last_id(tag)
+    tags.append({tag: last_id})
     await users.update_one(
         {"user_id": message.from_user.id},
-        {"$set": {"tags": tags, "last_id": last_id}},
+        {"$set": {"tags": tags}},
         upsert=True,
     )
 
     await loading.edit_text(
-        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag[1]}" успішно додано в базу даних</b>\n'
-        "❓ Як тільки з'являться нові оголошення по цій темі, бот автоматично надішле вам сповіщення!\n",
+        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag}" успішно додано в базу даних</b>\n'
+        f"❓ Як тільки з'являться нові оголошення по цій темі, бот автоматично надішле вам сповіщення! (Використано {len(tags)} з {limit} тегів)\n",
         parse_mode="html",
     )
 
 
 @router.message(Command("remove_tag"), IsBlacklist())
-async def remove_tag_handler(message: Message) -> None:
+async def remove_tag_handler(message: Message, command: CommandObject) -> None:
     """
     A command to delete a tag from database. (using update_one)
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
@@ -128,9 +128,10 @@ async def remove_tag_handler(message: Message) -> None:
     Params:
     - message: Message - Telegram message
     """
-
-    tag: list = message.text.split(maxsplit=1)
-    if len(tag) <= 1:
+    limit = 3 if await get_premium_status(message.from_user.id) else 1
+    
+    tag_: str = command.args
+    if not tag_:
         return await message.answer(
             "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> Як додати видалити тег?\n"
             '🔵 Приклад: "/remove_tag ігровий пк"',
@@ -139,26 +140,29 @@ async def remove_tag_handler(message: Message) -> None:
 
     tags = await get_user_tags(message.from_user.id)
 
+    tag_dict = [t_dict for t_dict in tags for tag in t_dict.keys() if tag == tag_][0]
+    tag_name = list(tag_dict.keys())[0]
+
     if len(tags) < 1:
         return await message.answer(
             "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>\n",
             parse_mode="html",
         )
 
-    if tag[1] not in tags:
+    if tag_ not in tag_name:
         return await message.answer(
             "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Цього тегу немає у списку</b>\n",
             parse_mode="html",
         )
 
-    tags.remove(tag[1])
+    tags.remove(tag_dict)
     await users.update_one(
         {"user_id": message.from_user.id}, {"$set": {"tags": tags}}, upsert=True
     )
 
     await message.answer(
-        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag[1]}" успішно прибрано з бази даних</b>\n'
-        "❓ Бот більше не присилатиме вам сповіщення по цій темі!\n",
+        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag_}" успішно прибрано з бази даних</b>\n'
+        f"❓ Бот більше не присилатиме вам сповіщення по цій темі! (Використано {len(tags)} з {limit} тегів)\n",
         parse_mode="html",
     )
 
@@ -174,11 +178,11 @@ async def view_tags_handler(message: Message) -> None:
 
     tags = await get_user_tags(message.from_user.id)
 
-    tags_list = "\n".join(f"#{tag}" for tag in tags)
+    tags_list = "\n".join(f"#{tag_name}" for tag in tags for tag_name in tag.keys())
 
     await message.answer(
         (
-            f"<a href='https://i.ibb.co/GQgnRsb/image.jpg'>❓</a> <b>Ваші теги:</b>\n{tags_list}"
+            f"<a href='https://i.ibb.co/GQgnRsb/image.jpg'>❓</a> <b>Ваші теги ({len(tags)}):</b>\n{tags_list}"
             if tags
             else "<a href='https://i.ibb.co/GQgnRsb/image.jpg'>❗️</a> <b>У вас немає доданих тегів</b>"
         ),

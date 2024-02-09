@@ -29,19 +29,6 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
         return await response.text()
 
 
-async def fetch_and_parse(session, url):
-    """
-    Fetch and parse HTML content.
-
-    Params:
-    - session: aiohttp.ClientSession - aiohttp session
-    - url: str - URL to fetch
-    """
-
-    html_content = await fetch(session, url)
-    return BeautifulSoup(html_content, "html.parser")
-
-
 async def check_new_items(
     bot: Bot, session: aiohttp.ClientSession, tag: str, data: Any
 ) -> None:
@@ -135,9 +122,7 @@ async def check_new_items(
             )
             logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         else:
-            return logging.info(
-                f"[{datetime.now().strftime('%H:%M:%S')}] No new items found"
-            )
+            return logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
 
 
 async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -> None:
@@ -183,44 +168,44 @@ async def process_tags(bot: Bot, session, data) -> None:
     - session: aiohttp.ClientSession - aiohttp session
     - data: Any - user data for database
     """
-    for tag in data.get("tags"):
-        await check_new_items(bot, session, tag=tag, data=data)
+    
+    for tags in data.get("tags"):
+        for tag, _ in tags.items():
+            await check_new_items(bot, session, tag=tag, data=data)
 
 
-async def get_last_id(tag: str) -> int:
+async def get_last_id(tag: str) -> None:
     """
-    Get last ID of the target item.
+    Scrape OLX website for listings related to the target item.
 
     Params:
-    - tag: str - item tag
+    - tag: str - tag to search for
     """
-
+    
     async with aiohttp.ClientSession() as session:
-        search_result = await fetch(session, SEARCH_URL.format(target=tag))
+        result = await fetch(session, SEARCH_URL.format(target=tag))
 
-    product_soup = BeautifulSoup(search_result, "html.parser")
-    product_links = product_soup.find_all("a", class_="css-rc5s2u")
+    product_soup = BeautifulSoup(result, "html.parser")
 
-    async def process_link(link):
-        text = link.find("p", class_="css-1a4brun er34gjf0").text
-        if "Сьогодні о " in text:
+    all_list = []
+    for element in product_soup.find_all("a", class_="css-rc5s2u"):
+        text = element.find("p", class_="css-1a4brun er34gjf0").text
+        if text.find("Сьогодні о ") != -1:
             splitted = text.split(" - Сьогодні о ", maxsplit=1)
-            product_url = MAIN_SITE + link.get("href")
-
             async with aiohttp.ClientSession() as session:
-                site_content = await fetch(session, product_url)
-
-            site_soup = BeautifulSoup(site_content, "html.parser")
+                site = await fetch(session, MAIN_SITE + element.get("href"))
+            site_soup = BeautifulSoup(site, "html.parser")
             product_id = site_soup.find(
                 "span", class_="css-12hdxwj er34gjf0"
             ).text.replace("ID: ", "")
-            return {splitted[1]: int(product_id)}
+            all_list.append({splitted[1]: product_id})
 
-    tasks = [process_link(link) for link in product_links]
-    results = await asyncio.gather(*tasks)
+    last_id_dict = max(all_list, key=lambda x: list(x.keys())[0])
+    last_id = list(last_id_dict.values())[0]
+    
+    print(last_id)
 
-    last_id_dict = max(results, key=lambda x: list(x.keys())[0])
-    return list(last_id_dict.values())[0]
+    return int(last_id)
 
 
 async def main(bot: Bot) -> None:
