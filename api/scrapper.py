@@ -9,7 +9,7 @@ import re
 
 import aiohttp
 from bs4 import BeautifulSoup
-from database import user_tags, NEW_ITEMS_URL, SEARCH_URL, MAIN_SITE
+from database import users, NEW_ITEMS_URL, SEARCH_URL, MAIN_SITE
 
 logging.basicConfig(
     format="\033[1;32;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m",
@@ -27,6 +27,19 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
     """
     async with session.get(url) as response:
         return await response.text()
+
+
+async def fetch_and_parse(session, url):
+    """
+    Fetch and parse HTML content.
+
+    Params:
+    - session: aiohttp.ClientSession - aiohttp session
+    - url: str - URL to fetch
+    """
+
+    html_content = await fetch(session, url)
+    return BeautifulSoup(html_content, "html.parser")
 
 
 async def check_new_items(
@@ -71,7 +84,7 @@ async def check_new_items(
                 "ID: ", ""
             )
         ) >= data.get("last_id"):
-            await user_tags.update_one(
+            await users.update_one(
                 {"user_id": data.get("user_id")},
                 {
                     "$set": {
@@ -110,7 +123,7 @@ async def check_new_items(
             await bot.send_message(
                 chat_id=data.get("chat_id"),
                 text=(
-                    f"<a href='https://pbt.storage.yandexcloud.net/cp_upload/81dfe15e19c39647389362b9781aa17f_full.png'>📌</a> <b>Нове оголошення по</b> #{tag}\n\n"
+                    f"<a href='https://i.ibb.co/ZLCdJHt/image.jpg'>📌</a> <b>Нове оголошення по</b> #{tag}\n\n"
                     f"🔗 <b>Посилання:</b> {MAIN_SITE}{element.get('href')}\n"
                     f"📛 <b>Назва:</b> {element.find('h6', class_='css-16v5mdi er34gjf0').text}\n"
                     f"💰 <b>Ціна:</b> {parsed_info.find('h3', class_='css-12vqlj3').text if parsed_info.find('h3', class_='css-12vqlj3') else 'Не вказана'}\n"
@@ -122,7 +135,9 @@ async def check_new_items(
             )
             logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         else:
-            return logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
+            return logging.info(
+                f"[{datetime.now().strftime('%H:%M:%S')}] No new items found"
+            )
 
 
 async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -> None:
@@ -141,7 +156,7 @@ async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -
         await fetch(session, f"{MAIN_SITE}{element.get('href')}"), "html.parser"
     )
 
-    await user_tags.update_one(
+    await users.update_one(
         {"user_id": data.get("user_id")},
         {
             "$set": {
@@ -172,35 +187,40 @@ async def process_tags(bot: Bot, session, data) -> None:
         await check_new_items(bot, session, tag=tag, data=data)
 
 
-async def get_last_id(tag: str) -> None:
+async def get_last_id(tag: str) -> int:
     """
-    Scrape OLX website for listings related to the target item.
+    Get last ID of the target item.
 
     Params:
-    - tag: str - tag to search for
+    - tag: str - item tag
     """
+
     async with aiohttp.ClientSession() as session:
-        result = await fetch(session, SEARCH_URL.format(target=tag))
+        search_result = await fetch(session, SEARCH_URL.format(target=tag))
 
-    product_soup = BeautifulSoup(result, "html.parser")
+    product_soup = BeautifulSoup(search_result, "html.parser")
+    product_links = product_soup.find_all("a", class_="css-rc5s2u")
 
-    all_list = []
-    for element in product_soup.find_all("a", class_="css-rc5s2u"):
-        text = element.find("p", class_="css-1a4brun er34gjf0").text
-        if text.find("Сьогодні о ") != -1:
+    async def process_link(link):
+        text = link.find("p", class_="css-1a4brun er34gjf0").text
+        if "Сьогодні о " in text:
             splitted = text.split(" - Сьогодні о ", maxsplit=1)
+            product_url = MAIN_SITE + link.get("href")
+
             async with aiohttp.ClientSession() as session:
-                site = await fetch(session, MAIN_SITE + element.get("href"))
-            site_soup = BeautifulSoup(site, "html.parser")
+                site_content = await fetch(session, product_url)
+
+            site_soup = BeautifulSoup(site_content, "html.parser")
             product_id = site_soup.find(
                 "span", class_="css-12hdxwj er34gjf0"
             ).text.replace("ID: ", "")
-            all_list.append({splitted[1]: product_id})
+            return {splitted[1]: int(product_id)}
 
-    last_id_dict = max(all_list, key=lambda x: list(x.keys())[0])
-    last_id = list(last_id_dict.values())[0]
+    tasks = [process_link(link) for link in product_links]
+    results = await asyncio.gather(*tasks)
 
-    return int(last_id)
+    last_id_dict = max(results, key=lambda x: list(x.keys())[0])
+    return list(last_id_dict.values())[0]
 
 
 async def main(bot: Bot) -> None:
@@ -215,7 +235,7 @@ async def main(bot: Bot) -> None:
     logger.info("Started loop for checking new items")
 
     while True:
-        async for data in user_tags.find():
+        async for data in users.find():
             async with aiohttp.ClientSession() as session:
                 tags = data.get("tags")
 

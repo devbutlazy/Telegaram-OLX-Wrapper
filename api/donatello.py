@@ -5,7 +5,7 @@ from typing import Union, Any
 from aiogram.types import Message
 
 from aiohttp import ClientSession
-from database import DONATELLO_URL, user_tags
+from database import DONATELLO_URL, users
 
 
 class Donatello:
@@ -35,7 +35,7 @@ class Donatello:
                 if donate["clientName"] == str(donator) and str(
                     donate["message"]
                 ) == str(comment):
-                    await user_tags.update_one(
+                    await users.update_one(
                         {"user_id": int(donate["clientName"])},
                         {
                             "$set": {
@@ -45,7 +45,8 @@ class Donatello:
                         upsert=True,
                     )
                     return await message.answer(
-                        text="✔️ <b>Ви успішно придбали преміум!</b>", parse_mode="html"
+                        text="a href='https://i.ibb.co/y8C33Yj/image.jpg'>✅</a> <b>Ви успішно придбали преміум! Дякуємо за підтримку!</b>",
+                        parse_mode="html",
                     )
             else:
                 await asyncio.sleep(5)
