@@ -42,22 +42,24 @@ async def check_new_items(
     - data: Any - data from database
     """
     result = await fetch(
-        session, NEW_ITEMS_URL.format(target=tag, last_id=data.get("last_id"))
+        session,
+        NEW_ITEMS_URL.format(
+            target=tag,
+            last_id=data.get("last_id"),
+            price_from=data.get("min_amount"),
+            price_to=data.get("max_amount"),
+        ),
     )
     product_soup = BeautifulSoup(result, "html.parser")
     product_elements = product_soup.find_all("a", class_="css-rc5s2u")
 
-    try:
+    if product_elements:
         parsed_info = BeautifulSoup(
             await fetch(session, MAIN_SITE + product_elements[0].get("href")),
             "html.parser",
         )
-    except IndexError:
-        print(product_elements)
-        parsed_info = BeautifulSoup(
-            await fetch(session, MAIN_SITE + product_elements.find("href")),
-            "html.parser",
-        )
+    else:
+        logging.error("No product elements found.")
 
     for element in product_elements:
         parsed_info = BeautifulSoup(
@@ -122,7 +124,9 @@ async def check_new_items(
             )
             logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] New item found")
         else:
-            return logging.info(f"[{datetime.now().strftime('%H:%M:%S')}] No new items found")
+            return logging.info(
+                f"[{datetime.now().strftime('%H:%M:%S')}] No new items found"
+            )
 
 
 async def scrape_info(session: aiohttp.ClientSession, element: Any, data: Any) -> None:
@@ -168,7 +172,7 @@ async def process_tags(bot: Bot, session, data) -> None:
     - session: aiohttp.ClientSession - aiohttp session
     - data: Any - user data for database
     """
-    
+
     for tags in data.get("tags"):
         for tag, _ in tags.items():
             await check_new_items(bot, session, tag=tag, data=data)
@@ -181,7 +185,7 @@ async def get_last_id(tag: str) -> None:
     Params:
     - tag: str - tag to search for
     """
-    
+
     async with aiohttp.ClientSession() as session:
         result = await fetch(session, SEARCH_URL.format(target=tag))
 
@@ -202,8 +206,6 @@ async def get_last_id(tag: str) -> None:
 
     last_id_dict = max(all_list, key=lambda x: list(x.keys())[0])
     last_id = list(last_id_dict.values())[0]
-    
-    print(last_id)
 
     return int(last_id)
 

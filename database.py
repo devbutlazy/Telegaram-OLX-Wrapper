@@ -14,18 +14,23 @@ SEARCH_URL: str = (
     "https://www.olx.ua/uk/list/q-{target}/?search%5Border%5D=created_at%3Adesc"
 )
 NEW_ITEMS_URL: str = (
+    # "https://www.olx.ua/uk/list/q-{target}/?min_id={last_id}"
+    # "&reason=observed_search"
+    # "&search%5Border%5D=created_at%3Adesc"
     "https://www.olx.ua/uk/list/q-{target}/?min_id={last_id}"
-    "&reason=observed_search"
-    "&search%5Border%5D=created_at%3Adesc"
+    "&reason=observed_search&search%5Border%5D=created_at:desc"
+    "&search%5Bfilter_float_price:from%5D={price_from}&search%5Bfilter_float_price:to%5D={price_to}"
 )
 DONATELLO_URL: str = "https://donatello.to/devbutlazy?&c={title}&a=100&m={comment}"
 
 
 class IsBlacklist(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        return message.from_user.id not in (await blacklist.find_one({"id": 1})).get(
-            "user_list", []
-        )
+        if await blacklist.find_one({"id": 1}):
+            return message.from_user.id not in (
+                await blacklist.find_one({"id": 1})
+            ).get("user_list", [])
+        return True
 
 
 class IsAdmin(BaseFilter):
@@ -33,18 +38,10 @@ class IsAdmin(BaseFilter):
         return message.from_user.id in [6456054542, 5986334014]
 
 
-class IsPremium(BaseFilter):
-    async def __call__(self, message: Message) -> bool:
-        return (await users.find_one({"user_id": message.from_user.id})).get(
-            "premium_status", False
-        )
-
-
 async def get_user_tags(user_id: int) -> Optional[List[str]]:
     if not await users.find_one({"user_id": user_id}):
         return []
 
-    # {"tag": last_id}
     return (await users.find_one({"user_id": user_id})).get("tags", [])
 
 
@@ -83,9 +80,10 @@ async def create_user(user_id: int, chat_id: int) -> None:
         {
             "$set": {
                 "chat_id": chat_id,
-                "last_id": 0,
                 "tags": [],
                 "premium_status": False,
+                "min_amount": 0,
+                "max_amount": 0,
             }
         },
         upsert=True,

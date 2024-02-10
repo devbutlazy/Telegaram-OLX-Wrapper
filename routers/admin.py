@@ -35,6 +35,7 @@ async def blacklist_add_handler(message: Message, command: CommandObject) -> Non
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     try:
@@ -70,6 +71,7 @@ async def blacklist_remove_handler(message: Message, command: CommandObject) -> 
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     try:
@@ -123,6 +125,7 @@ async def blacklist_view_handler(message: Message) -> None:
         parse_mode="html",
     )
 
+
 @router.message(Command("add_premium"), IsAdmin())
 async def premium_add_handler(message: Message, command: CommandObject) -> None:
     """
@@ -130,6 +133,7 @@ async def premium_add_handler(message: Message, command: CommandObject) -> None:
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     if not (await users.find_one({"user_id": int(command.args)})):
@@ -137,7 +141,7 @@ async def premium_add_handler(message: Message, command: CommandObject) -> None:
             text=f"<a href='https://shorturl.at/svIT4'>❗️</a> <b>Такого користувача немає в базі даних</b>",
             parse_mode="html",
         )
-    
+
     try:
         await users.update_one(
             {"user_id": int(command.args)},
@@ -158,6 +162,7 @@ async def premium_add_handler(message: Message, command: CommandObject) -> None:
             parse_mode="html",
         )
 
+
 @router.message(Command("remove_premium"), IsAdmin())
 async def premium_remove_handler(message: Message, command: CommandObject) -> None:
     """
@@ -165,6 +170,7 @@ async def premium_remove_handler(message: Message, command: CommandObject) -> No
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     if not (await users.find_one({"user_id": int(command.args)})):
@@ -172,7 +178,7 @@ async def premium_remove_handler(message: Message, command: CommandObject) -> No
             text=f"<a href='https://shorturl.at/svIT4'>❗️</a> <b>Такого користувача немає в базі даних</b>",
             parse_mode="html",
         )
-    
+
     try:
         await users.update_one(
             {"user_id": int(command.args)},
@@ -192,6 +198,7 @@ async def premium_remove_handler(message: Message, command: CommandObject) -> No
             text=f"<a href='https://shorturl.at/svIT4'>❗️</a> <b>У цього користувача не має преміуму</b>",
             parse_mode="html",
         )
+
 
 @router.message(Command("view_premium"), IsAdmin())
 async def premium_view_handler(message: Message) -> None:

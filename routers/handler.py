@@ -7,7 +7,7 @@ from api.donatello import donatello
 import asyncio
 
 router = Router()
-
+logger = logging.getLogger("aiogram")
 
 class CustomCallback(callback_data.CallbackData, prefix="data"):
     data: str
@@ -21,11 +21,6 @@ async def my_callback_foo(query: CallbackQuery, callback_data: CustomCallback):
     Params:
     - query: CallbackQuery - Telegram callback query
     """
-
-    logging.basicConfig(
-        format="\033[1;31;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m",
-        level=logging.ERROR,
-    )
 
     match callback_data.data:
         case "information":
@@ -46,4 +41,4 @@ async def my_callback_foo(query: CallbackQuery, callback_data: CustomCallback):
             await query.message.reply(
                 f"<a href='https://shorturl.at/svIT4'>❓</a> Сталася помилка, повідомте про неї на тех. підтримці!\n"
             )
-            logging.error(callback_data.data)
+            logger.error(callback_data.data)

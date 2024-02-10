@@ -15,9 +15,10 @@ from database import (
 )
 from api.scrapper import get_last_id
 from api.donatello import Donatello
+import logging
 
 router = Router()
-
+logger = logging.getLogger("aiogram")
 
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
@@ -68,12 +69,13 @@ async def add_tag_handler(message: Message, command: CommandObject) -> None:
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     tag: str = command.args
     if not tag:
         return await message.answer(
-            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> Як додати новий тег?\n"
+            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> <b>Як додати новий тег?</b>\n"
             '🔵 Приклад: "/add_tag ігровий пк"',
             parse_mode="html",
         )
@@ -127,14 +129,15 @@ async def remove_tag_handler(message: Message, command: CommandObject) -> None:
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
     limit = 3 if await get_premium_status(message.from_user.id) else 1
 
     tag_arg: str = command.args
     if not tag_arg:
         return await message.answer(
-            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> How to remove a tag?\n"
-            '🔵 Example: "/remove_tag game_pc"',
+            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> <b>Як видалити тег?</b>\n"
+            '🔵 Приклад: "/remove_tag ігровий пк"',
             parse_mode="html",
         )
 
@@ -147,13 +150,13 @@ async def remove_tag_handler(message: Message, command: CommandObject) -> None:
 
     if len(user_tags) < 1:
         return await message.answer(
-            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>You haven't added any tags yet</b>\n",
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>\n",
             parse_mode="html",
         )
 
     if tag_arg not in tag_name:
         return await message.answer(
-            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>This tag is not in your list</b>\n",
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Такого тегу немає в вашому списку</b>\n",
             parse_mode="html",
         )
 
@@ -163,8 +166,8 @@ async def remove_tag_handler(message: Message, command: CommandObject) -> None:
     )
 
     await message.answer(
-        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Tag "#{tag_arg}" successfully removed from the database</b>\n'
-        f"❓ The bot will no longer send you notifications on this topic! (Used {len(user_tags)} out of {limit} tags)\n",
+        f'<a href="https://i.ibb.co/LC64mF3/image.jpg">🟢</a> <b>Тег "#{tag_arg}" успішно прибрано з бази данних.</b>\n'
+        f"❓ Тепер бот не буде надсилати сповіщення по цій темі! (Використано {len(user_tags)} з {limit} тегів)\n",
         parse_mode="html",
     )
 
@@ -176,6 +179,7 @@ async def view_tags_handler(message: Message) -> None:
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     tags = await get_user_tags(message.from_user.id)
@@ -199,19 +203,20 @@ async def premium_command_handler(message: Message) -> None:
 
     Params:
     - message: Message - Telegram message
+    - command: CommandObject - Telegram command
     """
 
     premium_status = await get_premium_status(message.from_user.id)
     if premium_status:
         text = (
             "<b><a href='https://i.ibb.co/y8C33Yj/image.jpg'>✅</a> Ви придбали OLX Wrapper Pro</b>\n"
-            "<b>❗ Тепер у вас збільшений ліміт до трьох тегів!</b>"
+            "<b>❗ Тепер у вас збільшений ліміт до трьох тегів та додана можливість налаштовувати інтервал ціни!</b>"
         )
         reply_markup = None
     else:
         text = (
             "<a href='https://i.ibb.co/y8C33Yj/image.jpg'>❌</a> <b>Ви ще не придбали OLX Wrapper Pro</b>\n"
-            "❓ Після придбання преміуму, у вас буде збільшений ліміт тегів (до трьох)!\n"
+            "❓ Після придбання преміуму, у вас буде збільшений ліміт тегів (до трьох) та додана можливість налаштовувати інтервал ціни!\n"
             "💰 Варість: 100грн"
         )
         reply_markup = InlineKeyboardBuilder().button(
@@ -225,3 +230,70 @@ async def premium_command_handler(message: Message) -> None:
         parse_mode="html",
         reply_markup=reply_markup.as_markup() if reply_markup else None,
     )
+
+
+@router.message(Command("price_range"), IsBlacklist())
+async def price_range_handler(message: Message, command: CommandObject) -> None:
+    """
+    A command to add a user to the blacklist.
+
+    Params:
+    - message: Message - Telegram message
+    - command: CommandObject - Telegram command
+    """
+
+    limit = 3 if await get_premium_status(message.from_user.id) else 1
+    user_tags = await get_user_tags(message.from_user.id)
+
+    if not await get_premium_status(message.from_user.id):
+        return await message.answer(
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Ця функція доступна лише преміум користувачам (Інформація - /premium)</b>",
+            parse_mode="html",
+        )
+    
+    if not user_tags:
+        return await message.answer(
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>",
+            parse_mode="html",
+        )
+    
+    if not command.args:
+        return await message.answer(
+            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> <b>Як налаштувати мінімальну та максимальну сумму?</b>\n"
+            '🔵 Приклад: "/price_range 10 100 (для вимкнення фільтру передайте 0 та 0)"',
+            parse_mode="html",
+        )
+        
+    min_price, max_price = command.args.split()
+
+    try:
+        await users.update_one(
+            {"user_id": int(message.from_user.id)},
+            {
+                "$set": {
+                    "min_amount": int(min_price),
+                    "max_amount": int(max_price),
+                }
+            },
+            upsert=True,
+        )
+        if min_price == 0 and max_price == 0:
+            text = "Фільтр ціни вимкнений."
+        else:
+            text = f"Тепер теми будуть філтруватись з цінами від {int(min_price)}грн до {int(max_price)}грн"
+
+        await message.answer(
+            f'<a href="https://i.ibb.co/LC64mF3/image.jpg">✅</a> <b>{text}</b>\n'
+            f"❓ (Використано {len(user_tags)} з {limit} тегів)\n",
+            parse_mode="html",
+        )
+
+    except BaseException as error:
+        logger.error(f"Error: {error}")
+        await message.answer(
+            text=(
+                f"<a href='https://shorturl.at/svIT4'>❗️</a> <b>Можливо ви не правильно написали команду!</b>"
+                f"\n🔵 Приклад: <b>/price_range 10 100</b>"
+            ),
+            parse_mode="html",
+        )
