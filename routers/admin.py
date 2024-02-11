@@ -1,6 +1,6 @@
 from aiogram import Router
-from aiogram.types import Message
 from aiogram.filters import Command, CommandObject
+from aiogram.types import Message
 
 from database import IsAdmin, add_to_blacklist, remove_from_blacklist, blacklist, users
 
@@ -29,7 +29,7 @@ async def admin_help_handler(message: Message) -> None:
 
 
 @router.message(Command("blacklist_add"), IsAdmin())
-async def blacklist_add_handler(message: Message, command: CommandObject) -> None:
+async def blacklist_add_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to add a user to the blacklist.
 
@@ -101,7 +101,7 @@ async def blacklist_remove_handler(message: Message, command: CommandObject) -> 
 
 
 @router.message(Command("blacklist_view"), IsAdmin())
-async def blacklist_view_handler(message: Message) -> None:
+async def blacklist_view_handler(message: Message) -> Message:
     """
     A command to add a user to the blacklist.
 
@@ -127,7 +127,7 @@ async def blacklist_view_handler(message: Message) -> None:
 
 
 @router.message(Command("add_premium"), IsAdmin())
-async def premium_add_handler(message: Message, command: CommandObject) -> None:
+async def premium_add_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to add a user to the premium users.
 
@@ -164,7 +164,7 @@ async def premium_add_handler(message: Message, command: CommandObject) -> None:
 
 
 @router.message(Command("remove_premium"), IsAdmin())
-async def premium_remove_handler(message: Message, command: CommandObject) -> None:
+async def premium_remove_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to remove a user from premium users.
 
@@ -201,7 +201,7 @@ async def premium_remove_handler(message: Message, command: CommandObject) -> No
 
 
 @router.message(Command("view_premium"), IsAdmin())
-async def premium_view_handler(message: Message) -> None:
+async def premium_view_handler(message: Message) -> Message:
     """
     A command to add a user to the blacklist.
 

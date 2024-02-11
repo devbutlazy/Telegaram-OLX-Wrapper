@@ -1,7 +1,8 @@
-from typing import List, Optional
-from motor.motor_asyncio import AsyncIOMotorClient
+from typing import List, Optional, Dict, Any
+
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
+from motor.motor_asyncio import AsyncIOMotorClient
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 
@@ -38,7 +39,7 @@ class IsAdmin(BaseFilter):
         return message.from_user.id in [6456054542, 5986334014]
 
 
-async def get_user_tags(user_id: int) -> Optional[List[str]]:
+async def get_user_tags(user_id: int) -> Optional[List[Dict[str, Any]]]:
     if not await users.find_one({"user_id": user_id}):
         return []
 
@@ -81,6 +82,7 @@ async def create_user(user_id: int, chat_id: int) -> None:
             "$set": {
                 "chat_id": chat_id,
                 "tags": [],
+                "last_id": 0,
                 "premium_status": False,
                 "min_amount": 0,
                 "max_amount": 0,

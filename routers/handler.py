@@ -1,13 +1,15 @@
-from aiogram import Router, F
-from aiogram.types import CallbackQuery
-from aiogram.filters import callback_data
 import asyncio
 import logging
+
+from aiogram import Router
+from aiogram.filters import callback_data
+from aiogram.types import CallbackQuery
+
 from api.donatello import donatello
-import asyncio
 
 router = Router()
 logger = logging.getLogger("aiogram")
+
 
 class CustomCallback(callback_data.CallbackData, prefix="data"):
     data: str

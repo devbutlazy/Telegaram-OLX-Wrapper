@@ -1,24 +1,25 @@
-from aiogram import Router, F
-from aiogram.types import Message
-from aiogram.filters import Command, CommandStart, CommandObject
-from aiogram.utils.markdown import hbold
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from routers.handler import CustomCallback
+import logging
 
+from aiogram import Router
+from aiogram.filters import Command, CommandStart, CommandObject
+from aiogram.types import Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.markdown import hbold
+
+from api.donatello import Donatello
+from api.scrapper import get_last_id
 from database import (
     users,
     get_user_tags,
     create_user,
     get_premium_status,
-    DONATELLO_URL,
     IsBlacklist,
 )
-from api.scrapper import get_last_id
-from api.donatello import Donatello
-import logging
+from routers.handler import CustomCallback
 
 router = Router()
 logger = logging.getLogger("aiogram")
+
 
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
@@ -62,7 +63,7 @@ async def help_handler(message: Message) -> None:
 
 
 @router.message(Command("add_tag"), IsBlacklist())
-async def add_tag_handler(message: Message, command: CommandObject) -> None:
+async def add_tag_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to add a new tag to database. (using update_one)
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
@@ -124,7 +125,7 @@ async def add_tag_handler(message: Message, command: CommandObject) -> None:
 
 
 @router.message(Command("remove_tag"), IsBlacklist())
-async def remove_tag_handler(message: Message, command: CommandObject) -> None:
+async def remove_tag_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to delete a tag from the database. (using update_one)
     ~ text.split(maxsplit=1) - split the message into two parts (function call and tag)
@@ -218,7 +219,8 @@ async def premium_command_handler(message: Message) -> None:
     else:
         text = (
             "<a href='https://i.ibb.co/y8C33Yj/image.jpg'>❌</a> <b>Ви ще не придбали OLX Wrapper Pro</b>\n"
-            "❓ Після придбання преміуму, у вас буде збільшений ліміт тегів (до трьох) та додана можливість налаштовувати діапазон ціни!\n"
+            "❓ Після придбання преміуму, у вас буде збільшений ліміт тегів (до трьох) та додана можливість "
+            "налаштовувати діапазон ціни!\n"
             "💰 Варість: 100грн"
         )
         reply_markup = InlineKeyboardBuilder().button(
@@ -235,7 +237,7 @@ async def premium_command_handler(message: Message) -> None:
 
 
 @router.message(Command("price_range"), IsBlacklist())
-async def price_range_handler(message: Message, command: CommandObject) -> None:
+async def price_range_handler(message: Message, command: CommandObject) -> Message:
     """
     A command to add a user to the blacklist.
 
@@ -249,23 +251,24 @@ async def price_range_handler(message: Message, command: CommandObject) -> None:
 
     if not await get_premium_status(message.from_user.id):
         return await message.answer(
-            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Ця функція доступна лише преміум користувачам (Інформація - /premium)</b>",
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Ця функція доступна лише преміум користувачам (Інформація "
+            "- /premium)</b>",
             parse_mode="html",
         )
-    
+
     if not user_tags:
         return await message.answer(
             "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>",
             parse_mode="html",
         )
-    
+
     if not command.args:
         return await message.answer(
             "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> <b>Як налаштувати діапазон цін?</b>\n"
             '🔵 Приклад: "/price_range 10 100 (для вимкнення фільтру передайте 0 та 0)"',
             parse_mode="html",
         )
-        
+
     min_price, max_price = command.args.split()
 
     try:

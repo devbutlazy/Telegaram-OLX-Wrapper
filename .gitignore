@@ -1,8 +1,9 @@
 venv/
 .vscode/
 /__pycache__
-routers/__pycache__
-scrapper/__pycache__
+/routers/__pycache__
+/scrapper/__pycache__
+/api/__pycache__
 *.txt
 !requirements.txt
 .idea/

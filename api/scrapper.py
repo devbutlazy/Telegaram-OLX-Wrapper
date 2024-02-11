@@ -1,14 +1,13 @@
-from aiogram import Bot
-
 import asyncio
-from datetime import datetime
-from typing import Any
 import logging
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
+from typing import Any
 
 import aiohttp
+from aiogram import Bot
 from bs4 import BeautifulSoup
+
 from database import users, NEW_ITEMS_URL, SEARCH_URL, MAIN_SITE
 
 logging.basicConfig(
@@ -178,7 +177,7 @@ async def process_tags(bot: Bot, session, data) -> None:
             await check_new_items(bot, session, tag=tag, data=data)
 
 
-async def get_last_id(tag: str) -> None:
+async def get_last_id(tag: str) -> int:
     """
     Scrape OLX website for listings related to the target item.
 

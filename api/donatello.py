@@ -1,10 +1,10 @@
 import asyncio
-
 import json
 from typing import Union, Any
-from aiogram.types import Message
 
+from aiogram.types import Message
 from aiohttp import ClientSession
+
 from database import DONATELLO_URL, users
 
 
@@ -15,6 +15,7 @@ class Donatello:
         self.api = "https://donatello.to/api/v1/donates"
         self.session = ClientSession(headers={"X-Token": self.__token})
 
+    @staticmethod
     async def get_donate_url(user_name: str, user_id: int) -> str:
         return DONATELLO_URL.format(title=user_name, comment=user_id)
 
@@ -25,7 +26,7 @@ class Donatello:
 
     async def find_donate(
         self, message: Message, donator: Union[str, int], comment: str
-    ) -> None:
+    ) -> Union[Message, str]:
         while True:
             donates = await self.get_donates()
             if donates == -1:
@@ -45,7 +46,10 @@ class Donatello:
                         upsert=True,
                     )
                     return await message.answer(
-                        text="a href='https://i.ibb.co/y8C33Yj/image.jpg'>✅</a> <b>Ви успішно придбали преміум! Дякуємо за підтримку!</b>",
+                        text=(
+                            "a href='https://i.ibb.co/y8C33Yj/image.jpg'>✅</a> "
+                            "<b>Ви успішно придбали преміум! Дякуємо за підтримку!</b>"
+                        ),
                         parse_mode="html",
                     )
             else:
