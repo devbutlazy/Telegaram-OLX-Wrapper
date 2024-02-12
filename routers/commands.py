@@ -14,6 +14,7 @@ from database import (
     create_user,
     get_premium_status,
     IsBlacklist,
+    regions
 )
 from routers.handler import CustomCallback
 
@@ -57,7 +58,8 @@ async def help_handler(message: Message) -> None:
         "/remove_tag - Видалити тег\n"
         "/view_tags - Подивитись список своїх тегів\n"
         "/premium - Подивитись/придбати інформацію про преміум\n"
-        "/price_range - Налаштувати діапазон цін (Преміум)\n\n",
+        "/price_range - Налаштувати діапазон цін (Преміум)\n\n"
+        "/location - Налаштувати фільтр за локацією (Преміум)",
         parse_mode="html",
     )
 
@@ -302,3 +304,73 @@ async def price_range_handler(message: Message, command: CommandObject) -> Messa
             ),
             parse_mode="html",
         )
+
+
+@router.message(Command("location"), IsBlacklist())
+async def location_handler(message: Message, command: CommandObject) -> Message:
+    """
+    A command to add a user to the blacklist.
+
+    Params:
+    - message: Message - Telegram message
+    - command: CommandObject - Telegram command
+    """
+
+    user_tags = await get_user_tags(message.from_user.id)
+
+    if not await get_premium_status(message.from_user.id):
+        return await message.answer(
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>Ця функція доступна лише преміум користувачам (Інформація "
+            "- /premium)</b>",
+            parse_mode="html",
+        )
+
+    if not user_tags:
+        return await message.answer(
+            "<a href='https://shorturl.at/svIT4'>❗️</a> <b>У вас ще немає доданих тегів</b>",
+            parse_mode="html",
+        )
+
+    if not command.args:
+        return await message.answer(
+            "<a href='https://i.ibb.co/mNS3nt1/image.jpg'>❓</a> <b>Як налаштувати фільтр за локацією?</b>\n"
+            '🔵 Приклад: "/location Вінниця" (<b>Вимкнути</b> для вимкнення)',
+            parse_mode="html",
+        )
+
+    if command.args.capitalize().strip() == "Вимкнути":
+        await users.update_one(
+            {"user_id": int(message.from_user.id)},
+            {
+                "$set": {
+                    "location": "",
+                }
+            },
+            upsert=True,
+        )
+        return await message.answer(
+            "<a href='https://i.ibb.co/LC64mF3/image.jpg'>✅</a> <b>Фільтр за локацією вимкнено</b>",
+            parse_mode="html",
+        )
+
+    if not command.args.capitalize().strip() in regions:
+        return await message.answer(
+            "<a href='https://shorturl.at/svIT4'>❗</a> <b>Не правильний аргумент!</b>\n"
+            f"❓ <b>Доступні значення</b>: {', '.join(regions)}\n Або <b>Вимкнути</b> для вимкнення",
+            parse_mode="html"
+        )
+
+    await users.update_one(
+        {"user_id": int(message.from_user.id)},
+        {
+            "$set": {
+                "location": command.args.capitalize().strip(),
+            }
+        },
+        upsert=True,
+    )
+    await message.answer(
+        f"<a href='https://i.ibb.co/LC64mF3/image.jpg'>✅</a> "
+        f"<b>Фільтр за локацією встановлено на {command.args.capitalize().strip()}</b>",
+        parse_mode="html",
+    )

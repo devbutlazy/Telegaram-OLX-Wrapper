@@ -24,6 +24,10 @@ NEW_ITEMS_URL: str = (
 )
 DONATELLO_URL: str = "https://donatello.to/devbutlazy?&c={title}&a=100&m={comment}"
 
+regions = ["Закарпаття", "Львів", "Сумми", "Івано-Франківськ", "Тернопіль", "Харків", "Чернігів", "Черкаси", "Одеса",
+           "Київ", "Дніпро", "Херсон", "Полтава", "Рівне", "Чернівці", "Запоріжжя", "Волинь", "Хмельницьк", "Вінниця",
+           "Житомир", "Київська обл.", "Миколаїв", "Кіровоград"]
+
 
 class IsBlacklist(BaseFilter):
     async def __call__(self, message: Message) -> bool:
@@ -86,6 +90,7 @@ async def create_user(user_id: int, chat_id: int) -> None:
                 "premium_status": False,
                 "min_amount": 0,
                 "max_amount": 0,
+                "location": ""
             }
         },
         upsert=True,

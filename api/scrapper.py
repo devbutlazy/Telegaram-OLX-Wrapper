@@ -8,7 +8,7 @@ import aiohttp
 from aiogram import Bot
 from bs4 import BeautifulSoup
 
-from database import users, NEW_ITEMS_URL, SEARCH_URL, MAIN_SITE
+from database import users, NEW_ITEMS_URL, SEARCH_URL, MAIN_SITE, regions
 
 logging.basicConfig(
     format="\033[1;32;48m[%(asctime)s] | %(levelname)s | %(message)s\033[1;37;0m",
@@ -29,7 +29,7 @@ async def fetch(session: aiohttp.ClientSession, url: str) -> str:
 
 
 async def check_new_items(
-    bot: Bot, session: aiohttp.ClientSession, tag: str, data: Any
+        bot: Bot, session: aiohttp.ClientSession, tag: str, data: Any
 ) -> None:
     """
     Check for new items and send them to the user.
@@ -68,9 +68,9 @@ async def check_new_items(
             continue
 
         if int(
-            parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
-                "ID: ", ""
-            )
+                parsed_info.find("span", class_="css-12hdxwj er34gjf0").text.replace(
+                    "ID: ", ""
+                )
         ) >= data.get("last_id"):
             await users.update_one(
                 {"user_id": data.get("user_id")},
@@ -94,6 +94,14 @@ async def check_new_items(
                     )
                 }
             )
+
+            if data.get("location") and data.get("location") != "":
+                post_location = re.sub(r' - .*', '', element.find("p", class_="css-1a4brun er34gjf0").text)
+                if post_location.split(', ')[0] not in regions and data.get("location") not in post_location:
+                    pass
+                elif data.get("location") not in post_location.split(', ')[0]:
+                    continue
+
             new_date_string = None
             time_match = re.search(
                 r"\b(\d{2}:\d{2})\b",
@@ -222,15 +230,18 @@ async def main(bot: Bot) -> None:
 
     while True:
         async for data in users.find():
-            async with aiohttp.ClientSession() as session:
-                tags = data.get("tags")
+            try:
+                async with aiohttp.ClientSession() as session:
+                    tags = data.get("tags")
 
-                if tags is None:
-                    continue
+                    if tags is None:
+                        continue
 
-                if isinstance(tags, int):
-                    tags = [tags]
+                    if isinstance(tags, int):
+                        tags = [tags]
 
-                await process_tags(bot, session, data)
+                    await process_tags(bot, session, data)
+            except aiohttp.ClientConnectorError:
+                continue
         logger.info("5 Minute Cooldown Started")
         await asyncio.sleep(300)  # 300 seconds = 5 minutes
