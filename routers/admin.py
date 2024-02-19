@@ -52,6 +52,7 @@ async def blacklist_add_handler(message: Message, command: CommandObject) -> Mes
             text=f"a href='https://i.ibb.co/LC64mF3/image.jpg'>✅</a> <b>Ви додали {int(command.args)} до чорного списку</b>",
             parse_mode="html",
         )
+
     except AttributeError:
         await blacklist.update_one(
             {"id": 1},
