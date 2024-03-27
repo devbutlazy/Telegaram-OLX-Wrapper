@@ -8,8 +8,7 @@ from aiogram.enums import ParseMode
 import api.scrapper
 from routers import commands, admin, handler
 
-TOKEN = "6548645354:AAFwyuEs25CIBLdPhc3l9vYXqOuaxdyL7v4"
-# TOKEN = "5435989927:AAGxoXF6lrD3wvtyUZvv7uJm2acF9HhAdok"
+TOKEN = "" # Enter Bot Token
 
 
 async def main() -> None:
